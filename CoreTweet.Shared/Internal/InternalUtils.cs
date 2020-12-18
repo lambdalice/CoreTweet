@@ -344,6 +344,9 @@ namespace CoreTweet.Core
             if (x is TweetMode || x is Bucket)
                 return x.ToString().ToLowerInvariant();
 
+            if (x is V2.TweetExcludes)
+                return V2.TweetExcludesExtensions.ToQueryString((V2.TweetExcludes)x);
+
             if (x is V2.TweetExpansions)
                 return V2.TweetExpansionsExtensions.ToQueryString((V2.TweetExpansions)x);
             if (x is V2.UserExpansions)
