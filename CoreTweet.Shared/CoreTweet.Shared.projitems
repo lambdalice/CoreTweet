@@ -34,6 +34,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Internal\TokensBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\InternalUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)V2\ApiProviders.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)V2\Cursored.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)V2\Entity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)V2\Error.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)V2\GeoJson.cs" />
