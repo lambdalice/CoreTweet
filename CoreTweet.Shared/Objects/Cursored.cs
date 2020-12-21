@@ -133,58 +133,60 @@ namespace CoreTweet
     #if SYNC
     internal static class Cursored
     {
-        internal static IEnumerable<T> Enumerate<T>(TokensBase tokens, string apiName, string cursorKey, EnumerateMode mode, Expression<Func<string,object>>[] parameters, string urlPrefix = null, string urlSuffix = null)
+        internal static IEnumerable<T> Enumerate<T>(TokensBase tokens, string apiName, string cursorKey, EnumerateMode mode, string[] reservedNames, Expression<Func<string,object>>[] parameters, string urlPrefix = null, string urlSuffix = null)
         {
             var p = InternalUtils.ExpressionsToDictionary(parameters);
-            return EnumerateImpl<T>(tokens, apiName, cursorKey, mode, p, urlPrefix, urlSuffix);
+            return EnumerateImpl<T>(tokens, apiName, cursorKey, mode, reservedNames, p, urlPrefix, urlSuffix);
         }
 
-        internal static IEnumerable<T> Enumerate<T>(TokensBase tokens, string apiName, string cursorKey, EnumerateMode mode, IDictionary<string, object> parameters, string urlPrefix = null, string urlSuffix = null)
+        internal static IEnumerable<T> Enumerate<T>(TokensBase tokens, string apiName, string cursorKey, EnumerateMode mode, string[] reservedNames, IDictionary<string, object> parameters, string urlPrefix = null, string urlSuffix = null)
         {
-            return EnumerateImpl<T>(tokens, apiName, cursorKey, mode, parameters, urlPrefix, urlSuffix);
+            return EnumerateImpl<T>(tokens, apiName, cursorKey, mode, reservedNames, parameters, urlPrefix, urlSuffix);
         }
 
-        internal static IEnumerable<T> Enumerate<T>(TokensBase tokens, string apiName, string cursorKey, EnumerateMode mode, object parameters, string urlPrefix = null, string urlSuffix = null)
+        internal static IEnumerable<T> Enumerate<T>(TokensBase tokens, string apiName, string cursorKey, EnumerateMode mode, string[] reservedNames, object parameters, string urlPrefix = null, string urlSuffix = null)
         {
             var p = InternalUtils.ResolveObject(parameters);
-            return EnumerateImpl<T>(tokens, apiName, cursorKey, mode, p, urlPrefix, urlSuffix);
+            return EnumerateImpl<T>(tokens, apiName, cursorKey, mode, reservedNames, p, urlPrefix, urlSuffix);
         }
 
-        internal static IEnumerable<T> EnumerateImpl<T>(TokensBase tokens, string apiName, string cursorKey, EnumerateMode mode, IEnumerable<KeyValuePair<string, object>> parameters, string urlPrefix, string urlSuffix)
+        internal static IEnumerable<T> EnumerateImpl<T>(TokensBase tokens, string apiName, string cursorKey, EnumerateMode mode, string[] reservedNames, IEnumerable<KeyValuePair<string, object>> parameters, string urlPrefix, string urlSuffix)
         {
             if(mode == EnumerateMode.Next)
-                return EnumerateForwardImpl<Cursored<T>, T>(tokens, apiName, cursorKey, parameters, urlPrefix, urlSuffix);
+                return EnumerateForwardImpl<Cursored<T>, T>(tokens, apiName, cursorKey, reservedNames, parameters, urlPrefix, urlSuffix);
             else
-                return EnumerateBackwardImpl<Cursored<T>, T>(tokens, apiName, cursorKey, parameters, urlPrefix, urlSuffix);
+                return EnumerateBackwardImpl<Cursored<T>, T>(tokens, apiName, cursorKey, reservedNames, parameters, urlPrefix, urlSuffix);
         }
 
-        internal static IEnumerable<U> EnumerateForward<T, U>(TokensBase tokens, string apiName, string cursorKey, Expression<Func<string, object>>[] parameters, string urlPrefix = null, string urlSuffix = null)
+        internal static IEnumerable<U> EnumerateForward<T, U>(TokensBase tokens, string apiName, string cursorKey, string[] reservedNames, Expression<Func<string, object>>[] parameters, string urlPrefix = null, string urlSuffix = null)
             where T : CoreBase, ICursorForwardable, IEnumerable<U>
         {
             var p = InternalUtils.ExpressionsToDictionary(parameters);
-            return EnumerateForwardImpl<T, U>(tokens, apiName, cursorKey, p, urlPrefix, urlSuffix);
+            return EnumerateForwardImpl<T, U>(tokens, apiName, cursorKey, reservedNames, p, urlPrefix, urlSuffix);
         }
 
-        internal static IEnumerable<U> EnumerateForward<T, U>(TokensBase tokens, string apiName, string cursorKey, IDictionary<string, object> parameters, string urlPrefix = null, string urlSuffix = null)
+        internal static IEnumerable<U> EnumerateForward<T, U>(TokensBase tokens, string apiName, string cursorKey, string[] reservedNames, IDictionary<string, object> parameters, string urlPrefix = null, string urlSuffix = null)
             where T : CoreBase, ICursorForwardable, IEnumerable<U>
         {
-            return EnumerateForwardImpl<T, U>(tokens, apiName, cursorKey, parameters, urlPrefix, urlSuffix);
+            return EnumerateForwardImpl<T, U>(tokens, apiName, cursorKey, reservedNames, parameters, urlPrefix, urlSuffix);
         }
 
-        internal static IEnumerable<U> EnumerateForward<T, U>(TokensBase tokens, string apiName, string cursorKey, object parameters, string urlPrefix = null, string urlSuffix = null)
+        internal static IEnumerable<U> EnumerateForward<T, U>(TokensBase tokens, string apiName, string cursorKey, string[] reservedNames, object parameters, string urlPrefix = null, string urlSuffix = null)
             where T : CoreBase, ICursorForwardable, IEnumerable<U>
         {
             var p = InternalUtils.ResolveObject(parameters);
-            return EnumerateForwardImpl<T, U>(tokens, apiName, cursorKey, p, urlPrefix, urlSuffix);
+            return EnumerateForwardImpl<T, U>(tokens, apiName, cursorKey, reservedNames, p, urlPrefix, urlSuffix);
         }
 
-        internal static IEnumerable<U> EnumerateForwardImpl<T, U>(TokensBase tokens, string apiName, string cursorKey, IEnumerable<KeyValuePair<string, object>> parameters, string urlPrefix, string urlSuffix)
+        internal static IEnumerable<U> EnumerateForwardImpl<T, U>(TokensBase tokens, string apiName, string cursorKey, string[] reservedNames, IEnumerable<KeyValuePair<string, object>> parameters, string urlPrefix, string urlSuffix)
             where T : CoreBase, ICursorForwardable, IEnumerable<U>
         {
             var prmList = parameters.ToList();
             while(true)
             {
-                var r = tokens.AccessApiImpl<T>(MethodType.Get, apiName, prmList, "", urlPrefix, urlSuffix);
+                var r = reservedNames == null
+                    ? tokens.AccessApiImpl<T>(MethodType.Get, apiName, prmList, "", urlPrefix, urlSuffix)
+                    : tokens.AccessParameterReservedApi<T>(MethodType.Get, apiName, reservedNames, prmList, urlPrefix, urlSuffix);
                 foreach(var i in r)
                     yield return i;
                 var next = r.NextCursor;
@@ -195,13 +197,15 @@ namespace CoreTweet
             }
         }
 
-        internal static IEnumerable<U> EnumerateBackwardImpl<T, U>(TokensBase tokens, string apiName, string cursorKey, IEnumerable<KeyValuePair<string, object>> parameters, string urlPrefix, string urlSuffix)
+        internal static IEnumerable<U> EnumerateBackwardImpl<T, U>(TokensBase tokens, string apiName, string cursorKey, string[] reservedNames, IEnumerable<KeyValuePair<string, object>> parameters, string urlPrefix, string urlSuffix)
             where T : CoreBase, ICursorBackwardable, IEnumerable<U>
         {
             var prmList = parameters.ToList();
             while(true)
             {
-                var r = tokens.AccessApiImpl<T>(MethodType.Get, apiName, prmList, "", urlPrefix, urlSuffix);
+                var r = reservedNames == null
+                    ? tokens.AccessApiImpl<T>(MethodType.Get, apiName, prmList, "", urlPrefix, urlSuffix)
+                    : tokens.AccessParameterReservedApi<T>(MethodType.Get, apiName, reservedNames, prmList, urlPrefix, urlSuffix);
                 foreach(var i in r)
                     yield return i;
                 var next = r.PreviousCursor;
